@@ -1,0 +1,17 @@
+train:
+  _target_: src.datasets.libri_speech.LibriSpeechDataset
+  root_dir: "./data"
+  url: "test-clean"
+  crop: 0.5
+  sample_rate: 16000
+  download: False
+  limit: 10
+
+val:
+  _target_: src.datasets.libri_speech.LibriSpeechDataset
+  root_dir: "./data"
+  url: "test-clean"
+  crop: 0.5
+  sample_rate: 16000
+  download: False
+  limit: 10
