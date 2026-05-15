@@ -1,0 +1,5 @@
+train: [ ]
+inference:
+  - _target_: src.metrics.stoi_metric.STOIMetric
+    sample_rate: 16000
+    name: STOI

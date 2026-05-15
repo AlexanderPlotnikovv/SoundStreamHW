@@ -1,0 +1,6 @@
+_target_: src.model.soundstream.SoundStream
+C: 32
+K: 128
+N: 1024
+Nq: 8
+strides: [ 2, 4, 5, 5 ]

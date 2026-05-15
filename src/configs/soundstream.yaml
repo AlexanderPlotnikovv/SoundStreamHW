@@ -2,7 +2,7 @@ defaults:
   - model: soundstream
   - writer: cometml
   - metrics: soundstream
-  - datasets: librispeech_onebatchtest
+  - datasets: librispeech
   - dataloader: soundstream
   - transforms: null
   - _self_
@@ -30,16 +30,16 @@ discriminator:
   _target_: src.model.discriminator.Discriminator
 
 trainer:
-  log_step: 1
-  n_epochs: 2
-  epoch_len: 5
+  log_step: 50
+  n_epochs: 50
+  epoch_len: 900
   device_tensors: [ "audio" ]
   resume_from: null
   device: auto
   override: False
-  monitor: "off"
-  save_period: 1
-  early_stop: 10
+  monitor: "max val_STOI"
+  save_period: 5
+  early_stop: 50
   save_dir: "saved"
   seed: 1
   max_grad_norm: 10.0
