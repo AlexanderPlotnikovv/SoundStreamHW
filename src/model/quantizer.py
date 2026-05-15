@@ -9,6 +9,12 @@ class VectorQuantizer(nn.Module):
         self.K = K
         self.codebook = nn.Embedding(N, K)
 
+    def perplexity(self, indices):
+        counts = torch.bincount(indices, minlength=self.N)
+        probs = counts.float() / counts.sum()
+        entropy = -torch.sum(probs * torch.log(probs + 1e-10))
+        return torch.exp(entropy)
+
     def forward(self, z):
         B, K, T = z.shape
         z_flat = z.permute(0, 2, 1).reshape(-1, K)
@@ -37,6 +43,7 @@ class ResidualVectorQuantizer(nn.Module):
         residual = y.clone()
         all_indices = []
         commitment_loss = 0.0
+        total_perplexity = 0.0
 
         for quantizer in self.quantizers:
             quantized_st, quantized, idx = quantizer(residual)
@@ -44,8 +51,10 @@ class ResidualVectorQuantizer(nn.Module):
             residual = residual - quantized
             all_indices.append(idx)
             commitment_loss += F.mse_loss(residual.detach(), quantized)
+            total_perplexity += quantizer.perplexity(idx.flatten())
 
         all_indices = torch.stack(all_indices, dim=1)
         commitment_loss = commitment_loss / len(self.quantizers)
+        total_perplexity = total_perplexity / len(self.quantizers)
 
-        return y_hat, all_indices, commitment_loss
+        return y_hat, all_indices, commitment_loss, total_perplexity
