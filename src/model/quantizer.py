@@ -7,6 +7,7 @@ class VectorQuantizer(nn.Module):
     def __init__(self, N, K):
         super().__init__()
         self.K = K
+        self.N = N
         self.codebook = nn.Embedding(N, K)
 
     def perplexity(self, indices):
@@ -48,9 +49,9 @@ class ResidualVectorQuantizer(nn.Module):
         for quantizer in self.quantizers:
             quantized_st, quantized, idx = quantizer(residual)
             y_hat += quantized_st
+            commitment_loss += F.mse_loss(residual, quantized.detach())
             residual = residual - quantized
             all_indices.append(idx)
-            commitment_loss += F.mse_loss(residual.detach(), quantized)
             total_perplexity += quantizer.perplexity(idx.flatten())
 
         all_indices = torch.stack(all_indices, dim=1)

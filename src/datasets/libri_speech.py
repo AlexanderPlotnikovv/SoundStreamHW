@@ -48,8 +48,8 @@ class LibriSpeechDataset(Dataset):
             ).item()
             waveform = waveform[:, start : start + self.crop_samples]
         else:
-            repeats = (self.crop_len // waveform.shape[1]) + 1
+            repeats = (self.crop_samples // waveform.shape[1]) + 1
             waveform = waveform.repeat(1, repeats)
             waveform = waveform[:, : self.crop_samples]
 
-        return {"audio": waveform, "sample_rate": sample_rate}
+        return {"audio": waveform}

@@ -19,7 +19,11 @@ class STFTResidualBlock(nn.Module):
         self.skip = nn.Conv2d(N, m * N, kernel_size=1, stride=stride)
 
     def forward(self, x):
-        return self.net(x) + self.skip(x)
+        h = self.net(x)
+        s = self.skip(x)
+        min_t = min(h.shape[2], s.shape[2])
+        min_f = min(h.shape[3], s.shape[3])
+        return h[:, :, :min_t, :min_f] + s[:, :, :min_t, :min_f]
 
 
 class STFTDiscriminator(nn.Module):
@@ -41,22 +45,24 @@ class STFTDiscriminator(nn.Module):
 
         self.end_transform = nn.Conv2d(16 * C, 1, kernel_size=(1, 8))
 
-    def compute_shift(self, x):
-        x = x.squeeze(1)
+    def compute_stft(self, x):
+        x = x.squeeze(1).cpu()
         stft = torch.stft(
             x,
             n_fft=1024,
             hop_length=256,
             win_length=1024,
-            window=torch.hann_window(1024).to(x.device),
+            window=torch.hann_window(1024),
             return_complex=True,
         )
-
-        x = torch.stack([stft.real, stft.imag], dim=1).permute(0, 1, 3, 2)
-        return x
+        real = stft.real
+        imag = stft.imag
+        x = torch.stack([real, imag], dim=1)
+        x = x.permute(0, 1, 3, 2)
+        return x.to(next(self.parameters()).device)
 
     def forward(self, x):
-        x = self.compute_shift(x)
+        x = self.compute_stft(x)
         x = self.start_transform(x)
         x = self.residual_net(x)
         x = self.end_transform(x)
