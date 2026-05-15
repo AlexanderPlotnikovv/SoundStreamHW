@@ -1,6 +1,6 @@
 import torch
 
-from src.loss.losses import DiscriminatorLoss
+from src.loss.discriminator_loss import DiscriminatorLoss
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 

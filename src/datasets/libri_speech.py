@@ -4,7 +4,9 @@ from torch.utils.data import Dataset
 
 
 class LibriSpeechDataset(Dataset):
-    def __init__(self, root_dir, url, crop=0.5, sample_rate=16000, download=False):
+    def __init__(
+        self, root_dir, url, crop=0.5, sample_rate=16000, download=False, limit=None
+    ):
         """
         Args:
             root (str): path to dataset root
@@ -23,6 +25,9 @@ class LibriSpeechDataset(Dataset):
         self.sample_rate = sample_rate
         self.crop = crop
         self.resampler = {}
+
+        if limit is not None:
+            self.dataset = torch.utils.data.Subset(self.dataset, range(limit))
 
     def __len__(self):
         return len(self.dataset)

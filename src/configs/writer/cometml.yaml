@@ -1,7 +1,7 @@
-_target_: src.logger.comet_ml_writer.CometMLWriter
+_target_: src.logger.cometml.CometMLWriter
 project_name: "bhw-soundstream-plotnikov244"
 workspace: null
-run_name: "baseline-6kbps"
+run_name: "SoundStream-6kbps"
 mode: "online"
 loss_names: [
   "loss",

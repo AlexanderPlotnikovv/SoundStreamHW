@@ -12,10 +12,11 @@ from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-@hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
+@hydra.main(version_base=None, config_path="src/configs", config_name="soundstream")
 def main(config):
     """
-    Main script for training. Instantiates the model, optimizer, scheduler,
+    Main script for training SoundStream neural audio codec.
+    Instantiates the model, discriminator, optimizers, scheduler,
     metrics, logger, writer, and dataloaders. Runs Trainer to train and
     evaluate the model.
 
@@ -33,32 +34,31 @@ def main(config):
     else:
         device = config.trainer.device
 
-    # setup data_loader instances
-    # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, device)
-
-    # build model architecture, then print to console
     model = instantiate(config.model).to(device)
     logger.info(model)
 
-    # get function handles of loss and metrics
-    loss_function = instantiate(config.loss_function).to(device)
+    discriminator = instantiate(config.discriminator).to(device)
+    criterion = instantiate(config.criterion).to(device)
     metrics = instantiate(config.metrics)
 
-    # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = instantiate(config.optimizer, params=trainable_params)
-    lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
+    lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+        optimizer, lr_lambda=lambda epoch: 1
+    )
+    trainable_params_d = filter(lambda p: p.requires_grad, discriminator.parameters())
+    optimizer_d = instantiate(config.optimizer_d, params=trainable_params_d)
 
-    # epoch_len = number of iterations for iteration-based training
-    # epoch_len = None or len(dataloader) for epoch-based training
     epoch_len = config.trainer.get("epoch_len")
 
     trainer = Trainer(
         model=model,
-        criterion=loss_function,
+        discriminator=discriminator,
+        criterion=criterion,
         metrics=metrics,
         optimizer=optimizer,
+        optimizer_d=optimizer_d,
         lr_scheduler=lr_scheduler,
         config=config,
         device=device,

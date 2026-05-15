@@ -1,45 +1,17 @@
-defaults:
-  - model: soundstream
-  - writer: cometml
-  - metrics: soundstream
-  - datasets: librispeech_onebatchtest
-  - dataloader: soundstream
-  - transforms: null
-  - _self_
+train:
+  _target_: src.datasets.libri_speech.LibriSpeechDataset
+  root_dir: "./data"
+  url: "test-clean"
+  crop: 0.5
+  sample_rate: 16000
+  download: False
+  limit: 10
 
-optimizer:
-  _target_: torch.optim.Adam
-  lr: 0.0001
-  betas: [ 0.5, 0.9 ]
-
-optimizer_d:
-  _target_: torch.optim.Adam
-  lr: 0.0001
-  betas: [ 0.5, 0.9 ]
-
-lr_scheduler:
-  _target_: torch.optim.lr_scheduler.LambdaLR
-  lr_lambda: "lambda epoch: 1"
-
-criterion:
-  _target_: src.loss.losses.GeneratorLoss
-  lambda_commit: 1.0
-  lambda_feat: 100.0
-
-discriminator:
-  _target_: src.model.discriminator.Discriminator
-
-trainer:
-  log_step: 1
-  n_epochs: 2
-  epoch_len: 5
-  device_tensors: [ "audio" ]
-  resume_from: null
-  device: auto
-  override: False
-  monitor: "off"
-  save_period: 1
-  early_stop: 10
-  save_dir: "saved"
-  seed: 1
-  max_grad_norm: 10.0
+val:
+  _target_: src.datasets.libri_speech.LibriSpeechDataset
+  root_dir: "./data"
+  url: "test-clean"
+  crop: 0.5
+  sample_rate: 16000
+  download: False
+  limit: 10

@@ -1,0 +1,54 @@
+defaults:
+  - model: soundstream
+  - writer: cometml
+  - metrics: soundstream
+  - datasets: librispeech_onebatchtest
+  - dataloader: soundstream_onebatchtest
+  - transforms: null
+  - _self_
+
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.0001
+  betas: [ 0.5, 0.9 ]
+
+optimizer_d:
+  _target_: torch.optim.Adam
+  lr: 0.0001
+  betas: [ 0.5, 0.9 ]
+
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.ConstantLR
+  factor: 1.0
+  total_iters: 999999
+
+criterion:
+  _target_: src.loss.generator_loss.GeneratorLoss
+  lambda_commit: 1.0
+  lambda_feat: 100.0
+
+discriminator:
+  _target_: src.model.discriminator.Discriminator
+
+transforms:
+  batch_transforms:
+    train: null
+    inference: null
+
+writer:
+  run_name: "onebatch-test"
+
+trainer:
+  log_step: 1
+  n_epochs: 2
+  epoch_len: 5
+  device_tensors: [ "audio" ]
+  resume_from: null
+  device: auto
+  override: True
+  monitor: "off"
+  save_period: 1
+  early_stop: 10
+  save_dir: "saved"
+  seed: 1
+  max_grad_norm: 10.0
