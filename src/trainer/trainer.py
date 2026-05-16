@@ -110,7 +110,7 @@ class Trainer(BaseTrainer):
 
         else:
             with torch.no_grad():
-                x_fake, commit_loss, perplexity = self.model(x_real)
+                x_fake, commit_loss, perplexity, _ = self.model(x_real)
             batch["x_fake"] = x_fake
             batch["x_real"] = x_real
             batch["loss"] = torch.tensor(0.0)
