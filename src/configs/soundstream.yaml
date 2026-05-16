@@ -51,4 +51,4 @@ trainer:
   early_stop: 50
   save_dir: "saved"
   seed: 1
-  max_grad_norm: 10.0
+  max_grad_norm: 1000.0
