@@ -49,7 +49,8 @@ class Decoder(nn.Module):
 
         layers += [
             nn.ELU(),
-            weight_norm(nn.Conv1d(C, 1, kernel_size=7, padding=3), nn.Tanh()),
+            weight_norm(nn.Conv1d(C, 1, kernel_size=7, padding=3)),
+            nn.Tanh(),
         ]
 
         self.net = nn.Sequential(*layers)
