@@ -11,6 +11,14 @@ loss_names: [
   "reconstruction_loss",
   "commitment_loss",
   "codebook_perplexity",
+  "perplexity_layer_0",
+  "perplexity_layer_1",
+  "perplexity_layer_2",
+  "perplexity_layer_3",
+  "perplexity_layer_4",
+  "perplexity_layer_5",
+  "perplexity_layer_6",
+  "perplexity_layer_7",
 ]
 log_checkpoints: True
 id_length: 32
