@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class VectorQuantizer(nn.Module):
-    def __init__(self, N, K, decay=0.95, threshold=2.0):
+    def __init__(self, N, K, decay=0.99, threshold=2.0):
         super().__init__()
         self.N = N
         self.K = K
@@ -66,9 +66,10 @@ class VectorQuantizer(nn.Module):
                     n_replace = min(n_dead, n_available)
 
                     if n_replace > 0:
-                        dists_min = torch.cdist(z_flat, self.codebook).min(dim=1).values
-                        _, far_idx = torch.topk(dists_min, k=n_replace)
-                        new_codes = z_flat[far_idx]
+                        random_idx = torch.randint(
+                            0, n_available, (n_replace,), device=z_flat.device
+                        )
+                        new_codes = z_flat[random_idx]
 
                         dead_indices = torch.where(dead)[0][:n_replace]
                         self.codebook[dead_indices] = new_codes
