@@ -36,7 +36,6 @@ class Trainer(BaseTrainer):
             **kwargs,
         )
         self.current_step = 0
-
         self.discriminator = discriminator.to(device)
         self.optimizer_d = optimizer_d
         self.disc_loss = DiscriminatorLoss()
@@ -50,6 +49,7 @@ class Trainer(BaseTrainer):
             x_fake, commit_loss, perplexity = self.model(x_real)
             batch["x_fake"] = x_fake
             batch["x_real"] = x_real
+
             self.optimizer_d.zero_grad()
             wave_logits_real, _ = self.discriminator.wave_discriminator(x_real)
             stft_logits_real, _ = self.discriminator.stft_discriminator(x_real)
@@ -66,6 +66,7 @@ class Trainer(BaseTrainer):
                 self.config.trainer.max_grad_norm,
             )
             self.optimizer_d.step()
+
             self.optimizer.zero_grad()
 
             with torch.no_grad():

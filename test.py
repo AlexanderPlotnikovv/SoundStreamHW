@@ -2,8 +2,11 @@ import torch
 
 from src.model.soundstream import SoundStream
 
-model = SoundStream(C=32, K=128, N=1024, Nq=8)
-x = torch.randn(2, 1, 8000)
-x_hat, commit_loss = model(x)
-print(x_hat.shape)
-print(commit_loss)
+model = SoundStream()
+model.eval()
+
+for L in [8000, 16000, 32000, 80000]:
+    x = torch.randn(1, 1, L)
+    with torch.no_grad():
+        x_hat, _, _ = model(x)
+    print(f"input {L:>6} → output {x_hat.shape[-1]:>6}, diff={x_hat.shape[-1] - L}")

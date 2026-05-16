@@ -8,7 +8,7 @@ class ResidualUnit(nn.Module):
         self.net = nn.Sequential(
             nn.ELU(),
             weight_norm(
-                nn.Conv1d(N, N, kernel_size=7, dilation=dilation, padding=3 * dilation)
+                nn.Conv1d(N, N, kernel_size=3, dilation=dilation, padding=dilation)
             ),
             nn.ELU(),
             weight_norm(nn.Conv1d(N, N, kernel_size=1)),

@@ -1,13 +1,13 @@
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn.utils import weight_norm
 
 from src.model.residual_unit import ResidualUnit
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, N, S, length):
+    def __init__(self, N, S):
         super().__init__()
-        self.target_length = length * S
         self.net = nn.Sequential(
             nn.ELU(),
             weight_norm(
@@ -21,11 +21,11 @@ class DecoderBlock(nn.Module):
         )
 
     def forward(self, x):
-        return self.net(x)[:, :, : self.target_length]
+        return self.net(x)
 
 
 class Decoder(nn.Module):
-    def __init__(self, C=32, K=128, length=8000, strides=None):
+    def __init__(self, C=32, K=128, strides=None):
         super().__init__()
 
         if strides is None:
@@ -36,15 +36,8 @@ class Decoder(nn.Module):
         ]
 
         channels = (2 ** len(strides)) * C
-        target_lengths = []
-        reverse_strides = list(reversed(strides))
-        target_length = length
-        for stride in strides:
-            target_length //= stride
-            target_lengths.append(target_length)
-        target_lengths = list(reversed(target_lengths))
-        for stride, cur_length in zip(reverse_strides, target_lengths):
-            layers.append(DecoderBlock(N=channels, S=stride, length=cur_length))
+        for stride in reversed(strides):
+            layers.append(DecoderBlock(N=channels, S=stride))
             channels //= 2
 
         layers += [
@@ -55,5 +48,11 @@ class Decoder(nn.Module):
 
         self.net = nn.Sequential(*layers)
 
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, x, target_length=None):
+        out = self.net(x)
+        if target_length is not None:
+            if out.shape[-1] > target_length:
+                out = out[:, :, :target_length]
+            elif out.shape[-1] < target_length:
+                out = F.pad(out, (0, target_length - out.shape[-1]))
+        return out

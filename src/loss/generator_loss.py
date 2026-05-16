@@ -7,22 +7,18 @@ def adv_loss(fake_logits):
     loss = 0.0
     for fake in fake_logits:
         loss += torch.mean(torch.relu(1 - fake))
-
-    loss /= len(fake_logits)
-    return loss
+    return loss / len(fake_logits)
 
 
 def feat_loss(real_features, fake_features):
     loss = 0.0
     K = len(real_features)
-
     for real_maps, fake_maps in zip(real_features, fake_features):
         L = len(real_maps)
         disc_loss = 0.0
         for real_feat, fake_feat in zip(real_maps, fake_maps):
             disc_loss += torch.mean(torch.abs(real_feat.detach() - fake_feat))
         loss += disc_loss / L
-
     return loss / K
 
 

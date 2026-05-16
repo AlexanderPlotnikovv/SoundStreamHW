@@ -23,7 +23,7 @@ class STFTResidualBlock(nn.Module):
             ),
             nn.LeakyReLU(0.2),
         )
-        self.skip = nn.Conv2d(N, m * N, kernel_size=1, stride=stride)
+        self.skip = weight_norm(nn.Conv2d(N, m * N, kernel_size=1, stride=stride))
 
     def forward(self, x):
         h = self.net(x)
@@ -37,10 +37,12 @@ class STFTDiscriminator(nn.Module):
     def __init__(self, C=32):
         super().__init__()
         self.register_buffer("window", torch.hann_window(1024))
+
         self.start_transform = nn.Sequential(
             weight_norm(nn.Conv2d(2, C, kernel_size=7, padding=3)),
             nn.LeakyReLU(0.2),
         )
+
         self.residual_blocks = nn.ModuleList(
             [
                 STFTResidualBlock(N=C, m=2, stride=(1, 2)),
@@ -51,6 +53,7 @@ class STFTDiscriminator(nn.Module):
                 STFTResidualBlock(N=8 * C, m=2, stride=(2, 2)),
             ]
         )
+
         self.end_transform = weight_norm(nn.Conv2d(16 * C, 1, kernel_size=(1, 8)))
 
     def compute_stft(self, x):
@@ -73,6 +76,6 @@ class STFTDiscriminator(nn.Module):
         for block in self.residual_blocks:
             x = block(x)
             feature_maps.append(x)
-        x = self.end_transform(x)
-        logit = x.squeeze(-1).squeeze(1)
+        logit = self.end_transform(x)
+        logit = logit.squeeze(-1).squeeze(1)
         return logit, feature_maps

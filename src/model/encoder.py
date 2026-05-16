@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn.utils import weight_norm
 
 from src.model.residual_unit import ResidualUnit
@@ -7,18 +8,23 @@ from src.model.residual_unit import ResidualUnit
 class EncoderBlock(nn.Module):
     def __init__(self, N, S):
         super().__init__()
-        self.net = nn.Sequential(
+        self.S = S
+        self.residuals = nn.Sequential(
             ResidualUnit(N // 2, dilation=1),
             ResidualUnit(N // 2, dilation=3),
             ResidualUnit(N // 2, dilation=9),
-            nn.ELU(),
-            weight_norm(
-                nn.Conv1d(N // 2, N, kernel_size=2 * S, stride=S, padding=S - 1)
-            ),
+        )
+        self.act = nn.ELU()
+        self.down = weight_norm(
+            nn.Conv1d(N // 2, N, kernel_size=2 * S, stride=S, padding=0)
         )
 
     def forward(self, x):
-        return self.net(x)
+        x = self.residuals(x)
+        x = self.act(x)
+        pad = self.S
+        x = F.pad(x, (pad // 2, pad - pad // 2), mode="replicate")
+        return self.down(x)
 
 
 class Encoder(nn.Module):
