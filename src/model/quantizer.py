@@ -58,12 +58,18 @@ class VectorQuantizer(nn.Module):
                 dead = self.ema_count < self.threshold
                 if dead.any():
                     n_dead = int(dead.sum().item())
-                    dists_min = torch.cdist(z_flat, self.codebook).min(dim=1).values
-                    _, far_idx = torch.topk(dists_min, k=min(n_dead, len(z_flat)))
-                    new_codes = z_flat[far_idx[:n_dead]]
-                    self.codebook[dead] = new_codes
-                    self.ema_weight[dead] = new_codes
-                    self.ema_count[dead] = 1.0
+                    n_available = z_flat.shape[0]
+                    n_replace = min(n_dead, n_available)
+
+                    if n_replace > 0:
+                        dists_min = torch.cdist(z_flat, self.codebook).min(dim=1).values
+                        _, far_idx = torch.topk(dists_min, k=n_replace)
+                        new_codes = z_flat[far_idx]
+
+                        dead_indices = torch.where(dead)[0][:n_replace]
+                        self.codebook[dead_indices] = new_codes
+                        self.ema_weight[dead_indices] = new_codes
+                        self.ema_count[dead_indices] = 1.0
 
         quantized_st = z + (quantized - z).detach()
         return quantized_st, quantized, idx.reshape(B, T)
