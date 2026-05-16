@@ -16,8 +16,7 @@ class SoundStream(nn.Module):
         self.decoder = Decoder(C=C, K=K, strides=strides)
 
     def forward(self, x):
-        L = x.shape[-1]
         z = self.encoder(x)
-        z_q, idx, commit_loss, perplexity = self.rvq(z)
-        x_hat = self.decoder(z_q, target_length=L)
-        return x_hat, commit_loss, perplexity
+        z_q, idx, commit_loss, perplexity, per_layer_ppl = self.rvq(z)
+        x_hat = self.decoder(z_q)
+        return x_hat, commit_loss, perplexity, per_layer_ppl

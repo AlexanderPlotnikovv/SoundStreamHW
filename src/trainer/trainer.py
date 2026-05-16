@@ -46,7 +46,7 @@ class Trainer(BaseTrainer):
         x_real = batch["audio"]
 
         if self.is_train:
-            x_fake, commit_loss, perplexity = self.model(x_real)
+            x_fake, commit_loss, perplexity, per_layer_ppl = self.model(x_real)
             batch["x_fake"] = x_fake
             batch["x_real"] = x_real
 
@@ -102,6 +102,10 @@ class Trainer(BaseTrainer):
                     metrics.update(loss_name, loss_val.item())
 
             metrics.update("codebook_perplexity", perplexity.detach().item())
+            for i in range(per_layer_ppl.shape[0]):
+                metrics.update(
+                    f"perplexity_layer_{i}", per_layer_ppl[i].detach().item()
+                )
             batch["loss"] = g_losses["loss"]
 
         else:

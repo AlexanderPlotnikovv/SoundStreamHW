@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class VectorQuantizer(nn.Module):
-    def __init__(self, N, K, decay=0.95, threshold=2.0):
+    def __init__(self, N, K, decay=0.99, threshold=2.0):
         super().__init__()
         self.N = N
         self.K = K
@@ -85,7 +85,7 @@ class ResidualVectorQuantizer(nn.Module):
         residual = y.clone()
         all_indices = []
         commitment_loss = 0.0
-        total_perplexity = 0.0
+        per_layer_perplexity = []
 
         for quantizer in self.quantizers:
             quantized_st, quantized, idx = quantizer(residual)
@@ -93,10 +93,17 @@ class ResidualVectorQuantizer(nn.Module):
             commitment_loss += F.mse_loss(residual, quantized.detach())
             residual = residual - quantized
             all_indices.append(idx)
-            total_perplexity += quantizer.perplexity(idx.flatten())
+            per_layer_perplexity.append(quantizer.perplexity(idx.flatten()))
 
         all_indices = torch.stack(all_indices, dim=1)
         commitment_loss = commitment_loss / len(self.quantizers)
-        total_perplexity = total_perplexity / len(self.quantizers)
+        total_perplexity = sum(per_layer_perplexity) / len(per_layer_perplexity)
+        per_layer_perplexity = torch.stack(per_layer_perplexity)
 
-        return y_hat, all_indices, commitment_loss, total_perplexity
+        return (
+            y_hat,
+            all_indices,
+            commitment_loss,
+            total_perplexity,
+            per_layer_perplexity,
+        )
