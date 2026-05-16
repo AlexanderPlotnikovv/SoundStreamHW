@@ -28,38 +28,34 @@ def feat_loss(real_features, fake_features):
 
 def rec_loss(x_real, x_fake, alpha=1.0):
     fft_sizes = [2**i for i in range(6, 12)]
+    device = x_real.device
     loss = 0.0
 
     for s in fft_sizes:
         hop = s // 4
-        win = s
-        window = torch.hann_window(win)
-        real_cpu = x_real.squeeze(1).cpu()
-        fake_cpu = x_fake.squeeze(1).cpu()
+        window = torch.hann_window(s, device=device)
 
         real_spec = torch.stft(
-            real_cpu,
+            x_real.squeeze(1),
             n_fft=s,
             hop_length=hop,
-            win_length=win,
+            win_length=s,
             window=window,
             return_complex=True,
         ).abs()
-
         fake_spec = torch.stft(
-            fake_cpu,
+            x_fake.squeeze(1),
             n_fft=s,
             hop_length=hop,
-            win_length=win,
+            win_length=s,
             window=window,
             return_complex=True,
         ).abs()
 
-        real_spec = real_spec.to(x_real.device)
-        fake_spec = fake_spec.to(x_fake.device)
-        loss += torch.mean(torch.abs(real_spec - fake_spec))
-        loss += alpha * torch.mean(
-            (torch.log(real_spec + 1e-7) - torch.log(fake_spec + 1e-7)) ** 2
+        loss += F.l1_loss(real_spec, fake_spec)
+        loss += alpha * F.mse_loss(
+            torch.log(real_spec + 1e-7),
+            torch.log(fake_spec + 1e-7),
         )
 
     return loss / len(fft_sizes)

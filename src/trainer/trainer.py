@@ -51,42 +51,44 @@ class Trainer(BaseTrainer):
             batch["x_fake"] = x_fake
             batch["x_real"] = x_real
             self.optimizer_d.zero_grad()
-
-            wave_logits_real, wave_feats_real = self.discriminator.wave_discriminator(
-                x_real
-            )
-            stft_logits_real = self.discriminator.stft_discriminator(x_real)
+            wave_logits_real, _ = self.discriminator.wave_discriminator(x_real)
+            stft_logits_real, _ = self.discriminator.stft_discriminator(x_real)
             wave_logits_fake, _ = self.discriminator.wave_discriminator(x_fake.detach())
-            stft_logits_fake = self.discriminator.stft_discriminator(x_fake.detach())
+            stft_logits_fake, _ = self.discriminator.stft_discriminator(x_fake.detach())
+
             real_logits = wave_logits_real + [stft_logits_real]
             fake_logits = wave_logits_fake + [stft_logits_fake]
 
             d_losses = self.disc_loss(real_logits, fake_logits)
-            if self.current_step % 2 == 0:
-                d_losses["loss"].backward()
-                torch.nn.utils.clip_grad_norm_(
-                    self.discriminator.parameters(),
-                    self.config.trainer.max_grad_norm,
-                )
-                self.optimizer_d.step()
-            else:
-                d_losses = {
-                    "loss": torch.tensor(0.0),
-                    "discriminator_loss": torch.tensor(0.0),
-                }
-            self.optimizer_d.zero_grad()
+            d_losses["loss"].backward()
+            torch.nn.utils.clip_grad_norm_(
+                self.discriminator.parameters(),
+                self.config.trainer.max_grad_norm,
+            )
+            self.optimizer_d.step()
+            self.optimizer.zero_grad()
+
+            with torch.no_grad():
+                _, wave_feats_real = self.discriminator.wave_discriminator(x_real)
+                _, stft_feats_real = self.discriminator.stft_discriminator(x_real)
 
             wave_logits_fake, wave_feats_fake = self.discriminator.wave_discriminator(
                 x_fake
             )
-            stft_logits_fake = self.discriminator.stft_discriminator(x_fake)
+            stft_logits_fake, stft_feats_fake = self.discriminator.stft_discriminator(
+                x_fake
+            )
+
             fake_logits = wave_logits_fake + [stft_logits_fake]
+            real_features = wave_feats_real + [stft_feats_real]
+            fake_features = wave_feats_fake + [stft_feats_fake]
+
             g_losses = self.criterion(
                 x_real=x_real,
                 x_fake=x_fake,
                 fake_logits=fake_logits,
-                real_features=wave_feats_real,
-                fake_features=wave_feats_fake,
+                real_features=real_features,
+                fake_features=fake_features,
                 commit_loss=commit_loss,
             )
             g_losses["loss"].backward()

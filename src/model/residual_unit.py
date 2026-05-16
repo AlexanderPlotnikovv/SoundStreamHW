@@ -1,4 +1,5 @@
 import torch.nn as nn
+from torch.nn.utils import weight_norm
 
 
 class ResidualUnit(nn.Module):
@@ -6,9 +7,11 @@ class ResidualUnit(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.ELU(),
-            nn.Conv1d(N, N, kernel_size=7, dilation=dilation, padding=3 * dilation),
+            weight_norm(
+                nn.Conv1d(N, N, kernel_size=7, dilation=dilation, padding=3 * dilation)
+            ),
             nn.ELU(),
-            nn.Conv1d(N, N, kernel_size=1),
+            weight_norm(nn.Conv1d(N, N, kernel_size=1)),
         )
 
     def forward(self, x):

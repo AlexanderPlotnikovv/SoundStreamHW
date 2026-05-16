@@ -9,12 +9,12 @@ defaults:
 
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.00003
+  lr: 0.0001
   betas: [ 0.5, 0.9 ]
 
 optimizer_d:
   _target_: torch.optim.Adam
-  lr: 0.000003
+  lr: 0.0001
   betas: [ 0.5, 0.9 ]
 
 lr_scheduler:
@@ -51,4 +51,4 @@ trainer:
   early_stop: 50
   save_dir: "saved"
   seed: 1
-  max_grad_norm: 500.0
+  max_grad_norm: 10.0
