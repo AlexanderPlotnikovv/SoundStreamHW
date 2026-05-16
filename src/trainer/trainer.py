@@ -35,6 +35,8 @@ class Trainer(BaseTrainer):
             writer=writer,
             **kwargs,
         )
+        self.current_step = 0
+
         self.discriminator = discriminator.to(device)
         self.optimizer_d = optimizer_d
         self.disc_loss = DiscriminatorLoss()
@@ -60,9 +62,19 @@ class Trainer(BaseTrainer):
             fake_logits = wave_logits_fake + [stft_logits_fake]
 
             d_losses = self.disc_loss(real_logits, fake_logits)
-            d_losses["loss"].backward()
-            self.optimizer_d.step()
-            self.optimizer.zero_grad()
+            if self.current_step % 2 == 0:
+                d_losses["loss"].backward()
+                torch.nn.utils.clip_grad_norm_(
+                    self.discriminator.parameters(),
+                    self.config.trainer.max_grad_norm,
+                )
+                self.optimizer_d.step()
+            else:
+                d_losses = {
+                    "loss": torch.tensor(0.0),
+                    "discriminator_loss": torch.tensor(0.0),
+                }
+            self.optimizer_d.zero_grad()
 
             wave_logits_fake, wave_feats_fake = self.discriminator.wave_discriminator(
                 x_fake
@@ -99,6 +111,7 @@ class Trainer(BaseTrainer):
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(x_real=x_real, x_fake=x_fake))
 
+        self.current_step += 1
         return batch
 
     def _log_batch(self, batch_idx, batch, mode="train"):
