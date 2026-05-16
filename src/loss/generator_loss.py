@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchaudio
 
 
 def adv_loss(fake_logits):
@@ -58,15 +59,48 @@ def rec_loss(x_real, x_fake, alpha=1.0):
 
 
 class GeneratorLoss(nn.Module):
-    def __init__(self, lambda_commit=1.0, lambda_feat=100.0):
+    def __init__(self, lambda_commit=1.0, lambda_feat=100.0, sample_rate=16000):
         super().__init__()
         self.lambda_commit = lambda_commit
         self.lambda_feat = lambda_feat
 
+        self.fft_sizes = [128, 256, 512, 1024, 2048]
+        n_mels_per_size = [32, 64, 64, 64, 64]
+
+        self.mel_transforms = nn.ModuleList(
+            [
+                torchaudio.transforms.MelSpectrogram(
+                    sample_rate=sample_rate,
+                    n_fft=s,
+                    hop_length=s // 4,
+                    win_length=s,
+                    n_mels=nm,
+                    power=1.0,
+                    center=True,
+                    normalized=False,
+                )
+                for s, nm in zip(self.fft_sizes, n_mels_per_size)
+            ]
+        )
+
+    def _mel_rec_loss(self, x_real, x_fake):
+        loss = 0.0
+        for s, mel in zip(self.fft_sizes, self.mel_transforms):
+            alpha = (s / 2) ** 0.5
+            real_mel = mel(x_real.squeeze(1))
+            fake_mel = mel(x_fake.squeeze(1))
+
+            loss += F.l1_loss(real_mel, fake_mel)
+            loss += alpha * F.mse_loss(
+                torch.log(real_mel + 1e-5),
+                torch.log(fake_mel + 1e-5),
+            )
+        return loss / len(self.mel_transforms)
+
     def forward(
         self, x_real, x_fake, fake_logits, real_features, fake_features, commit_loss
     ):
-        l_rec = rec_loss(x_real, x_fake)
+        l_rec = self._mel_rec_loss(x_real, x_fake)
         l_adv = adv_loss(fake_logits)
         l_feat = feat_loss(real_features, fake_features)
 

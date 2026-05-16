@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class VectorQuantizer(nn.Module):
-    def __init__(self, N, K, decay=0.99, threshold=2.0):
+    def __init__(self, N, K, decay=0.95, threshold=2.0):
         super().__init__()
         self.N = N
         self.K = K
@@ -14,10 +14,28 @@ class VectorQuantizer(nn.Module):
         self.register_buffer("codebook", torch.randn(N, K))
         self.register_buffer("ema_count", torch.ones(N))
         self.register_buffer("ema_weight", torch.randn(N, K))
+        self.register_buffer("initialized", torch.tensor(False))
+
+    def _init_codebook(self, z_flat):
+        n_samples = z_flat.shape[0]
+        with torch.no_grad():
+            if n_samples >= self.N:
+                perm = torch.randperm(n_samples, device=z_flat.device)
+                init = z_flat[perm[: self.N]]
+            else:
+                repeats = (self.N + n_samples - 1) // n_samples
+                init = z_flat.repeat(repeats, 1)[: self.N]
+                init = init + 0.01 * torch.randn_like(init)
+            self.codebook.copy_(init)
+            self.ema_weight.copy_(init)
+            self.ema_count.fill_(1.0)
+            self.initialized.fill_(True)
 
     def forward(self, z):
         B, K, T = z.shape
         z_flat = z.permute(0, 2, 1).reshape(-1, K)
+        if self.training and not self.initialized:
+            self._init_codebook(z_flat)
 
         dist = torch.cdist(z_flat, self.codebook)
         idx = dist.argmin(dim=1)
@@ -36,12 +54,16 @@ class VectorQuantizer(nn.Module):
                 self.codebook = self.ema_weight / self.ema_count.unsqueeze(1).clamp(
                     min=1e-5
                 )
+
                 dead = self.ema_count < self.threshold
                 if dead.any():
-                    random_idx = torch.randint(
-                        len(z_flat), (dead.sum(),), device=z_flat.device
-                    )
-                    self.codebook[dead] = z_flat[random_idx]
+                    n_dead = int(dead.sum().item())
+                    dists_min = torch.cdist(z_flat, self.codebook).min(dim=1).values
+                    _, far_idx = torch.topk(dists_min, k=min(n_dead, len(z_flat)))
+                    new_codes = z_flat[far_idx[:n_dead]]
+                    self.codebook[dead] = new_codes
+                    self.ema_weight[dead] = new_codes
+                    self.ema_count[dead] = 1.0
 
         quantized_st = z + (quantized - z).detach()
         return quantized_st, quantized, idx.reshape(B, T)
