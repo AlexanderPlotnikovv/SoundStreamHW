@@ -12,6 +12,7 @@ hydra-core
 librosa
 pesq
 pystoi
+setuptools
 ffmpeg
 
 black
