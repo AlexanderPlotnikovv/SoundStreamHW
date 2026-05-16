@@ -18,16 +18,25 @@ optimizer_d:
   betas: [ 0.5, 0.9 ]
 
 lr_scheduler:
-  _target_: torch.optim.lr_scheduler.LambdaLR
-  lr_lambda: "lambda epoch: 1"
+  _target_: torch.optim.lr_scheduler.ConstantLR
+  factor: 1.0
+  total_iters: 999999
 
 criterion:
-  _target_: src.loss.losses.GeneratorLoss
+  _target_: src.loss.generator_loss.GeneratorLoss
   lambda_commit: 1.0
   lambda_feat: 100.0
 
 discriminator:
   _target_: src.model.discriminator.Discriminator
+
+transforms:
+  batch_transforms:
+    train: null
+    inference: null
+
+writer:
+  run_name: "SoundStream"
 
 trainer:
   log_step: 50
