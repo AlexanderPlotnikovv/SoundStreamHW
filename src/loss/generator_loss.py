@@ -101,22 +101,16 @@ class GeneratorLoss(nn.Module):
         self, x_real, x_fake, fake_logits, real_features, fake_features, commit_loss
     ):
         l_rec = self._mel_rec_loss(x_real, x_fake)
-        l_time = F.l1_loss(x_real, x_fake)
         l_adv = adv_loss(fake_logits)
         l_feat = feat_loss(real_features, fake_features)
 
         loss = (
-            l_adv
-            + self.lambda_feat * l_feat
-            + l_rec
-            + l_time
-            + self.lambda_commit * commit_loss
+            l_adv + self.lambda_feat * l_feat + l_rec + self.lambda_commit * commit_loss
         )
 
         return {
             "loss": loss,
             "reconstruction_loss": l_rec,
-            "time_loss": l_time,
             "adversarial_loss": l_adv,
             "feature_loss": l_feat,
             "commitment_loss": commit_loss,

@@ -9,12 +9,12 @@ defaults:
 
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.0002
+  lr: 0.0001
   betas: [ 0.5, 0.9 ]
 
 optimizer_d:
   _target_: torch.optim.Adam
-  lr: 0.0002
+  lr: 0.0001
   betas: [ 0.5, 0.9 ]
 
 lr_scheduler:

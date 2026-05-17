@@ -9,7 +9,6 @@ loss_names: [
   "adversarial_loss",
   "feature_loss",
   "reconstruction_loss",
-  "time_loss",
   "commitment_loss",
   "codebook_perplexity",
   "perplexity_layer_0",
