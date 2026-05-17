@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class VectorQuantizer(nn.Module):
-    def __init__(self, N, K, decay=0.99, threshold=2.0):
+    def __init__(self, N, K, decay=0.99, threshold=3.0):
         super().__init__()
         self.N = N
         self.K = K
