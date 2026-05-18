@@ -1,13 +1,27 @@
 defaults:
-  - model: baseline
-  - metrics: example
-  - datasets: example_eval # we do not want to run inference on training data
-  - dataloader: example
-  - transforms: example
+  - model: soundstream
+  - metrics: soundstream
+  - datasets: librispeech_eval
+  - dataloader: soundstream
+  - transforms: null
   - _self_
+
 inferencer:
-  device_tensors: ["data_object", "labels"] # which tensors should be on device (ex. GPU)
-  device: auto # device name or "auto"
-  save_path: "example" # any name here, can be a dataset name
+  device: auto
   seed: 1
-  from_pretrained: "saved/model_best.pth" # path to the pretrained model
+  save_path: "predictions"
+  from_pretrained: "soundstream_libri/model_best.pth"
+  device_tensors: [ "audio" ]
+
+transforms:
+  batch_transforms:
+    train: null
+    inference: null
+
+datasets:
+  test:
+    _target_: src.datasets.libri_speech.LibriSpeechDataset
+    root_dir: "data"
+    url: "test-clean"
+    sample_rate: 16000
+    crop: null

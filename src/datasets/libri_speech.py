@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 import torchaudio
 from torch.utils.data import Dataset
 
@@ -7,23 +8,15 @@ class LibriSpeechDataset(Dataset):
     def __init__(
         self, root_dir, url, crop=0.5, sample_rate=16000, download=False, limit=None
     ):
-        """
-        Args:
-            root (str): path to dataset root
-            url (str): which split, e.g. "train-clean-100" or "test-clean"
-            crop_seconds (float): length of random crop in seconds
-            sample_rate (int): target sample rate
-            download (bool): download if not present
-        """
         self.dataset = torchaudio.datasets.LIBRISPEECH(
             root=root_dir,
             url=url,
             download=download,
         )
 
-        self.crop_samples = int(crop * sample_rate)
         self.sample_rate = sample_rate
         self.crop = crop
+        self.crop_samples = int(crop * sample_rate) if crop is not None else None
         self.resampler = {}
 
         if limit is not None:
@@ -42,14 +35,20 @@ class LibriSpeechDataset(Dataset):
                 )
             waveform = self.resampler[sample_rate](waveform)
 
-        if waveform.shape[1] >= self.crop_samples:
-            start = torch.randint(
-                0, waveform.shape[1] - self.crop_samples + 1, (1,)
-            ).item()
-            waveform = waveform[:, start : start + self.crop_samples]
+        if self.crop_samples is not None:
+            if waveform.shape[1] >= self.crop_samples:
+                start = torch.randint(
+                    0, waveform.shape[1] - self.crop_samples + 1, (1,)
+                ).item()
+                waveform = waveform[:, start : start + self.crop_samples]
+            else:
+                repeats = (self.crop_samples // waveform.shape[1]) + 1
+                waveform = waveform.repeat(1, repeats)
+                waveform = waveform[:, : self.crop_samples]
         else:
-            repeats = (self.crop_samples // waveform.shape[1]) + 1
-            waveform = waveform.repeat(1, repeats)
-            waveform = waveform[:, : self.crop_samples]
+            L = waveform.shape[1]
+            pad = (200 - L % 200) % 200
+            if pad > 0:
+                waveform = F.pad(waveform, (0, pad), mode="replicate")
 
         return {"audio": waveform}

@@ -5,7 +5,7 @@ import torch
 from hydra.utils import instantiate
 
 from src.datasets.data_utils import get_dataloaders
-from src.trainer import Inferencer
+from src.trainer.codec_inferencer import CodecInferencer
 from src.utils.init_utils import set_random_seed
 from src.utils.io_utils import ROOT_PATH
 
@@ -44,7 +44,7 @@ def main(config):
     save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
     save_path.mkdir(exist_ok=True, parents=True)
 
-    inferencer = Inferencer(
+    inferencer = CodecInferencer(
         model=model,
         config=config,
         device=device,
